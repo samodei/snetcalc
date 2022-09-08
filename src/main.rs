@@ -1,9 +1,5 @@
 extern crate clap;
-extern crate ipnet;
 
-//use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-//use std::net::Ipv4Addr;
-use ipnet::Ipv4Net;
 use clap::{Arg, App, SubCommand, value_t};
 /*
 fn get_broadcast(cidr: Ipv4Net) {
@@ -14,65 +10,75 @@ fn to_decimal() {
     println!("decimal");
 }
 */
-fn get_range(cidrnet: Ipv4Net) {
+/*fn get_range(cidrnet: Ipv4Net) {
     println!("{:?}", cidrnet);
-}
+}*/
 
 fn get_maxhosts(maskbits: u32) -> u32 {
+    // TODO Rewrite to take output from parse_addr
     // Return total number of hosts.
     return u32::pow(2, 32 - maskbits);
 }
 
 fn get_usablehosts(maxhosts: u32) -> u32 {
+    // TODO Rewrite to take output from parse_addr
     // Return total number of usable hosts.
     return maxhosts - 2;
 }
 
-fn get_wildcard(maskbit: u32) -> u32 {
+fn get_wildcard(input: Vec<u8>) -> Vec<u8> {
     // Return wildcard mask.
-    return 255 - maskbit;
+    let mut wildcard: Vec<u8> = vec![];
+    for octet in input {
+        wildcard.push(255 - octet);
+    }
+
+    return wildcard;
+
 }
 
-fn get_slash() {
+fn parse_addr(input: String) -> Vec<u8> {
+    // Parse the input and store each octet in an array as u8
+
+    // Split the address by octet.
+    let addr: Vec<&str> = input.split(".").collect();
+    let mut addrint: Vec<u8> = vec![];
+
+    for octet in addr {
+        // String to u8 and push to addrint.
+        addrint.push(octet.parse().unwrap());
+    }
+
+    return addrint;
+}
+
+fn to_binary(input: Vec<u8>) -> Vec<u32> {
+    // Parse the ouput of parse_addr to convert to binary. 
+    let mut addrbin: Vec<u32> = vec![]; // getting an error when using u8
+    for octet in input {
+        addrbin.push(format!("{:b}", octet).parse().unwrap());
+    }
+
+    return addrbin;
 
 }
 
-fn dec_to_bin(input: String) {
-    // This may be a very hacky way to do this but the only way I can think of.
-    let netmask: Vec<&str> = input.split(".").collect();
-    let mut wildcard: Vec<u32> = vec![];
-
-        // I've been trying to understand how to do this for 2 years.
-        // Store each bit in an array then sum the array to get the slash notation.
-        let mut convert: Vec<u32> = vec![];
-        let mut chars: Vec<char> = vec![];
-
-        // Loop by octet.
-        for octet in &netmask {
-            // String to u32
-            let maskdec: u32 = octet.parse().unwrap();
-
-            // Format u32 into binary.
-            let maskbit: u32 = format!("{:b}", maskdec).parse().unwrap();
-           
-            // Make a string then store each character into vector.
-            let maskstr: String = maskbit.to_string();
-            let char_vec: Vec<char> = maskstr.chars().collect();
-            for c in char_vec {
-                // Store each char as u32 in vector.
-                let test: String = c.to_string();
-                let test2: u32 = test.parse().unwrap();
-                convert.push(test2);
-            }
-
-            // Get the wildcard mask and push to vector.
-            wildcard.push(get_wildcard(maskdec));
+fn get_slash(input: Vec<u32>) -> u32 {
+    // Take in binary and add the ones to get slash.
+    let mut convert: Vec<u32> = vec![];
+    for octet in &input {
+        let addrstr: String = octet.to_string();
+        let char_vec: Vec<char> = addrstr.chars().collect();
+        for c in char_vec {
+            let test: String = c.to_string();
+            let test2: u32 = test.parse().unwrap();
+            convert.push(test2);
         }
+        
+    }
 
-        // FINALLY SUM THE ARRAY
-        let slash: u32 = convert.iter().sum();
-        println!("{:?}", slash);
-
+    let slash: u32 = convert.iter().sum();
+    return slash;
 }
 
 fn main() {
@@ -93,42 +99,37 @@ fn main() {
              .short("s")
              .long("subnet")
              .value_name("subnet"))
+        .arg(Arg::with_name("wildcard")
+              .short("w")
+              .long("wildcard")
+              .value_name("wildcard"))
         .get_matches();
 
     if matches.is_present("cidr") {
-
-        // Probably should return all strings to console.
-        // Find range of 10.0.0.0/24
-        // Parse propper format
-        //let cidr = value_t!(matches.value_of("cidr"), String).unwrap_or_else(|e| e.exit());
-        //let net: IpNet = cidr.parse().unwrap();
-        // println!("{}", net);
-        //let net = IpAddr::V4(Ipv4Addr::new(10, 0, 0, 0));
-
-
         // NEW TEST
         // Take string then make to ipv4net
         let cidr = value_t!(matches.value_of("cidr"), String).unwrap_or_else(|e| e.exit());
-        let slash = cidr.split('/');
-        println!("{:?}", slash);
-        let cidrnet: Ipv4Net = cidr.parse().unwrap();
+
+        //test_parse(parse_addr(cidr));
+        to_binary(parse_addr(cidr));
+
+        //let cidrnet: Ipv4Net = cidr.parse().unwrap();
         //assert_eq!(Ok(cidrnet.network()), cidr.parse());
-
-        let test: u32 = 24;
-        println!("{:?}", cidrnet);
-
-    } if matches.is_present("hosts") {
+        //println!("{:?}", cidrnet);
+    } else if matches.is_present("hosts") {
         let hosts = value_t!(matches.value_of("hosts"), u32).unwrap_or_else(|e| e.exit());
         println!("Total number of hosts: {:?}", get_maxhosts(hosts));
         println!("Total number of usable hosts: {:?}", get_usablehosts(get_maxhosts(hosts)));
-    } if matches.is_present("subnet") {
-
-        //Going to try from scratch
-
+    } else if matches.is_present("subnet") {
+        // Convert from subnet mask to slash notation.
         let input = value_t!(matches.value_of("subnet"), String).unwrap_or_else(|e| e.exit());
-        dec_to_bin(input);
-        //println!("Slash: /{:?}", slash);
-        //println!("Wildcard mask: {:?}.{:?}.{:?}.{:?}", wildcard[0], wildcard[1], wildcard[2], wildcard[3]);
+
+        let binary = to_binary(parse_addr(input));
+        println!("{:?}", get_slash(binary));
+    } else if matches.is_present("wildcard") {
+        let input = value_t!(matches.value_of("wildcard"), String).unwrap_or_else(|e| e.exit());
+        // fix this formatting
+        println!("{:?}", get_wildcard(parse_addr(input)));
     } else {
         println!("no");
     }
