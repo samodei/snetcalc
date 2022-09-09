@@ -88,34 +88,34 @@ fn main() {
         .about("Calculates subnets.")
        // .license("BSD 3-Clause")
         .arg(Arg::with_name("cidr")
-             .short("c")
+             .short('c')
              .long("cidr")
              .value_name("CIDR"))
         .arg(Arg::with_name("hosts")
-             .short("h")
+             .short('h')
              .long("hosts")
              .value_name("hosts"))
         .arg(Arg::with_name("subnet")
-             .short("s")
+             .short('s')
              .long("subnet")
              .value_name("subnet"))
         .arg(Arg::with_name("wildcard")
-              .short("w")
+              .short('w')
               .long("wildcard")
               .value_name("wildcard"))
         .get_matches();
 
     if matches.is_present("cidr") {
-        // NEW TEST
-        // Take string then make to ipv4net
+        // TODO Parse CIDR
+        // snetcalc -c 10.0.0.0/24
+        // Range 10.0.0.0-10.0.0.255
+        // Max addresses
+        // Max usable hosts 254
+        // Network 10.0.0.0
+        // Broadcast 10.0.0.255
+        // Wildcard 0.0.0.255
+        // Subnet Mask 255.255.255.0
         let cidr = value_t!(matches.value_of("cidr"), String).unwrap_or_else(|e| e.exit());
-
-        //test_parse(parse_addr(cidr));
-        to_binary(parse_addr(cidr));
-
-        //let cidrnet: Ipv4Net = cidr.parse().unwrap();
-        //assert_eq!(Ok(cidrnet.network()), cidr.parse());
-        //println!("{:?}", cidrnet);
     } else if matches.is_present("hosts") {
         let hosts = value_t!(matches.value_of("hosts"), u32).unwrap_or_else(|e| e.exit());
         println!("Total number of hosts: {:?}", get_maxhosts(hosts));
