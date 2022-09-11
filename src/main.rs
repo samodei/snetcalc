@@ -86,6 +86,7 @@ fn main() {
         .version("0.0")
         .author("Stefano Amodei <stefano.amodei@pm.me>")
         .about("Calculates subnets.")
+        .arg_required_else_help(true)
        // .license("BSD 3-Clause")
         .arg(Arg::with_name("cidr")
              .short('c')
